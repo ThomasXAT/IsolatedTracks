@@ -1,12 +1,37 @@
 import React, { useState } from "react";
-import { Button, Text, TextInput, View } from "react-native";
+import { Button, TextInput, View } from "react-native";
+import { CheckBox } from 'react-native-elements';
 
 export default function Index() {
-  const [inputValue, setInputValue] = useState("");
-  const [submittedValue, setSubmittedValue] = useState("");
+  const key = "";
+  const channel = "";
+
+  const [search, setSearch] = useState("");
+  const [videos, setVideos] = useState<{ id: string; title: string }[]>([]);
+  const [checkedVideos, setCheckedVideos] = useState<string[]>([]);
 
   const handleSubmit = () => {
-    setSubmittedValue(inputValue);
+    fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&key=${key}&channelId=${channel}&q=${search}`)
+      .then((response) => response.json())
+      .then((data) => {
+        const formattedVideos = data.items.map((item: { id: { videoId: string }, snippet: { title: string } }) => ({
+          id: item.id.videoId,
+          title: item.snippet.title
+        }));
+        setVideos(formattedVideos);
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  };
+
+  const handleCheckBoxChange = (videoId: string) => {
+    if (checkedVideos.includes(videoId)) {
+      setCheckedVideos(checkedVideos.filter(id => id !== videoId));
+    }
+    else {
+      setCheckedVideos([...checkedVideos, videoId]);
+    }
   };
 
   return (
@@ -17,7 +42,7 @@ export default function Index() {
     >
       <View
         style={{
-          flexDirection: "row", 
+          flexDirection: "row"
         }}
       >
         <TextInput 
@@ -29,22 +54,28 @@ export default function Index() {
             backgroundColor: "#ffffff",
             paddingHorizontal: 10,
           }}
-          onChangeText={(text) => setInputValue(text)}
+          onChangeText={(text) => setSearch(text)}
         />
         <Button 
           title="Search"
           onPress={handleSubmit}
         />
       </View>
-      {submittedValue !== "" && (
-        <View
-          style={{
-            marginTop: 20,
-          }}
-        >
-          <Text>{submittedValue}</Text>
-        </View>
-      )}
+      <View
+        style={{
+          marginTop: 10,
+          marginHorizontal: -10
+        }}
+      >
+        {videos.map((video) => (
+          <CheckBox
+            key={video.id}
+            title={video.title}
+            checked={checkedVideos.includes(video.id)}
+            onPress={() => handleCheckBoxChange(video.id)}
+          />
+        ))}
+      </View>
     </View>
   );
 }
